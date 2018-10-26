@@ -4,7 +4,7 @@
 
 import queue
 import threading
-from network_2 import NetworkPacket
+from network_2 import IPPacket
 from threading import Lock
 
 
@@ -16,9 +16,6 @@ class Link:
     # @param to_node: node to which data will be transfered
     # @param to_intf_num: number of the interface on that node
     # @param mtu: link maximum transmission unit
-
-    ID = 0
-    lock = Lock()
 
     def __init__(self, from_node, from_intf_num, to_node, to_intf_num, mtu):
         self.from_node = from_node
@@ -43,9 +40,7 @@ class Link:
         if len(pkt_S) > self.out_intf.mtu:
             print('%s: packet "%s" length greater then link mtu (%d)' % (self, pkt_S, self.out_intf.mtu))
 
-            with self.lock:
-                packetsSegmented = NetworkPacket.segmentPacketsFromString(pkt_S, self.out_intf.mtu)
-                self.ID += 1
+            packetsSegmented = IPPacket.segmentPacketsFromString(pkt_S, self.out_intf.mtu)
 
             for x in range(0, len(packetsSegmented)):
                 # print("x =", x, "PacketSegmented[x]:", packetsSegmented[x])

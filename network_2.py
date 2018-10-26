@@ -56,10 +56,10 @@ class NetworkPacket:
     # extract a packet object from a byte string
     # @param byte_S: byte string representation of the packet
     @classmethod
-    def from_byte_S(self, byte_S):
+    def from_byte_S(cls, byte_S):
         dst_addr = int(byte_S[0: NetworkPacket.dst_addr_S_length])
         data_S = byte_S[NetworkPacket.dst_addr_S_length:]
-        return self(dst_addr, data_S)
+        return cls(dst_addr, data_S)
 
     @staticmethod
     def segmentPacketsFromString(pkt_S, mtu):
@@ -71,6 +71,7 @@ class NetworkPacket:
         # print("mtu:  ", mtu)
         # print("#packetsneeded: ", numOfPacketsNeeded)
         packetsSegmented = []
+
         for x in range(0, numOfPacketsNeeded):
             packet = str(dst_addr).zfill(NetworkPacket.dst_addr_S_length) + data_S[(mtu - NetworkPacket.dst_addr_S_length) * x: (mtu - NetworkPacket.dst_addr_S_length) * (x + 1)]
             packetsSegmented.append(packet)
@@ -79,59 +80,109 @@ class NetworkPacket:
 
 
 class IPPacket:
-    ID = 0
 
-    #dst_addr + data_S + length + ID + fragflag + offset
-    def __init__(self, dst_addr, data_S, fragflag, offset):
+    dst_addr_S_length = 5
+    length_S_length = 5
+    fragflag_S_length = 1
+    offset_S_length = 5
+    id_S_length = 4
+
+    #dst_addr + length + ID + fragflag + offset + data_S
+    def __init__(self, dst_addr, data_S, ID, fragflag, offset):
         self.dst_addr = dst_addr
         self.data_S = data_S
-        self.ID = self.ID + 1
+        self.ID = ID
         self.fragflag = fragflag
         self.offset = offset
 
-        self.length = len(dst_addr) + len(data_S) + len(self.ID) + len(fragflag) + len(offset)
+        #self.length = len(dst_addr) + len(data_S) + len(self.ID) + len(fragflag) + len(offset)
 
     # called when printing the object
     def __str__(self):
         return self.to_byte_S()
 
+    @classmethod
+    def from_byte_S(cls, byte_S):
+        dst_addr = int(byte_S[0: IPPacket.dst_addr_S_length])
+        #length = int(byte_S[IPPacket.dst_addr_S_length : IPPacket.dst_addr_S_length + IPPacket.length_S_length])
+        id = int(byte_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length : IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length])
+        fragflag = int(byte_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length : IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length])
+        offset = int(byte_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length : IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length + IPPacket.offset_S_length])
+        data_S = str(byte_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length + IPPacket.offset_S_length : ])
+        return cls(dst_addr, data_S, id, fragflag, offset)
+
     # convert packet to a byte string for transmission over links
     def to_byte_S(self):
-        byte_S = str(self.dst_addr).zfill(self.dst_addr_S_length)
-        byte_S += self.data_S
-        byte_S += str(self.length)
-        byte_S += str(self.ID)
-        byte_S += str(self.fragflag)
-        byte_S +=
-        return byte_S
+        dst_addr_S = str(self.dst_addr).zfill(self.dst_addr_S_length)
+        length_S = str(self.dst_addr_S_length + self.length_S_length + self.id_S_length + self.fragflag_S_length + self.offset_S_length + len(self.data_S)).zfill(self.length_S_length)
 
-    # extract a packet object from a byte string
-    # @param byte_S: byte string representation of the packet
-    @classmethod
-    def from_byte_S(self, byte_S):
-        dst_addr = int(byte_S[0: IPPacket.dst_addr_S_length])
-        data_S = byte_S[IPPacket.dst_addr_S_length:]
-        return self(dst_addr, data_S)
+        id_S = str(self.ID).zfill(self.id_S_length)
+        fragflag_S = str(self.fragflag).zfill(self.fragflag_S_length)
+        offset_S = str(self.offset).zfill(self.offset_S_length)
+
+        byte_S = dst_addr_S + length_S + id_S + fragflag_S + offset_S + self.data_S
+        return byte_S
 
     @staticmethod
     def segmentPacketsFromString(pkt_S, mtu):
-        with self.lock:
-            dst_addr = int(pkt_S[0: IPPacket.dst_addr_S_length])
-            data_S = pkt_S[IPPacket.dst_addr_S_length:]
+        dst_addr = int(pkt_S[0: IPPacket.dst_addr_S_length])
+        # length = int(byte_S[IPPacket.dst_addr_S_length : IPPacket.dst_addr_S_length + IPPacket.length_S_length])
+        id = int(pkt_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length: IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length])
+        offset = int(pkt_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length: IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length + IPPacket.offset_S_length])
+        data_S = str(pkt_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length + IPPacket.offset_S_length:])
 
-            numOfPacketsNeeded = int(math.ceil((len(pkt_S) / float(mtu))))
-            # print("len(pkt_S): ", len(pkt_S))
-            # print("mtu:  ", mtu)
-            # print("#packetsneeded: ", numOfPacketsNeeded)
-            packetsSegmented = []
-            for x in range(0, numOfPacketsNeeded):
-                packet = str(dst_addr).zfill(IPPacket.dst_addr_S_length) + data_S[(mtu - IPPacket.dst_addr_S_length) * x: (mtu - NetworkPacket.dst_addr_S_length) * (x + 1)]
-                packetsSegmented.append(packet)
+        data_S_length = len(data_S)
+        headers = pkt_S[: IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length + IPPacket.offset_S_length]
+        headers_length = len(headers)
 
-            return packetsSegmented
+        #numOfPacketsNeeded = int(math.ceil((len(pkt_S) / float(mtu))))
+        # print("len(pkt_S): ", len(pkt_S))
+        # print("mtu:  ", mtu)
+        # print("#packetsneeded: ", numOfPacketsNeeded)
+        packetsSegmented = []
+        '''for x in range(0, numOfPacketsNeeded):
+            
+            newPacketData = data_S[mtu - x: (mtu - headers_length * (x + 1))]
+            #packet = str(dst_addr).zfill(IPPacket.dst_addr_S_length) + data_S[(mtu - IPPacket.dst_addr_S_length) * x: (mtu - NetworkPacket.dst_addr_S_length) * (x + 1)]
+            packetsSegmented.append(headers + newPacketData)
+        '''
+        dataAvailable = mtu - headers_length
 
+        while data_S is not "":
+            fragflag = 1
+            if dataAvailable < len(data_S):
+                new_data_S = data_S[:dataAvailable]
+                data_S = data_S[dataAvailable:]
+            else:
+                new_data_S = data_S[:dataAvailable]
+                data_S = data_S[dataAvailable:]
+                fragflag = 0
+            packet = IPPacket(dst_addr, new_data_S, id, fragflag, offset)
+            offset += dataAvailable
+
+            packetsSegmented.append(packet.to_byte_S())
+
+        return packetsSegmented
+
+    # dst_addr + length + ID + fragflag + offset + data_S
+
+    def get_ID(byte_S):
+        id = int(byte_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length: IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length])
+        return id
+
+    def get_fragflag(byte_S):
+        fragflag = int(byte_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length : IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length])
+
+        return fragflag
+
+    def get_data_S(byte_S):
+        data_S = str(byte_S[IPPacket.dst_addr_S_length + IPPacket.length_S_length + IPPacket.id_S_length + IPPacket.fragflag_S_length + IPPacket.offset_S_length:])
+        return data_S
 # Implements a network host for receiving and transmitting data
 class Host:
+
+    packetsSent = 0
+    packet_S_List = []
 
     # @param addr: address of this node represented as an integer
     def __init__(self, addr):
@@ -148,15 +199,26 @@ class Host:
     # @param dst_addr: destination address for the packet
     # @param data_S: data being transmitted to the network layer
     def udt_send(self, dst_addr, data_S):
-        p = IPPacket(dst_addr, data_S)
+        p = IPPacket(dst_addr, data_S, 0, 0, self.packetsSent)
+        #fragflag, offset, id
+        self.packetsSent += 1
         self.out_intf_L[0].put(p.to_byte_S())  # send packets always enqueued successfully
         print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
 
     # receive packet from the network layer
     def udt_receive(self):
+
+        new_pkt_S = ""
+
+
         pkt_S = self.in_intf_L[0].get()
         if pkt_S is not None:
-            print('%s: received packet "%s" on the in interface' % (self, pkt_S))
+            self.packet_S_List.append(pkt_S)
+            if IPPacket.get_fragflag(pkt_S) is 0:
+                for packet in self.packet_S_List:
+                    new_pkt_S += IPPacket.get_data_S(packet)
+                print('%s: received packet "%s" on the in interface' % (self, new_pkt_S))
+                self.packet_S_List = []
 
     # thread target for the host to keep receiving data
     def run(self):
