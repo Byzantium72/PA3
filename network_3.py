@@ -66,18 +66,26 @@ class NetworkPacket:
 
     @staticmethod
     def segmentPacketsFromString(pkt_S, mtu):
+
         dst_addr = int(pkt_S[0: NetworkPacket.dst_addr_S_length])
-        data_S = pkt_S[NetworkPacket.dst_addr_S_length:]
+        src_addr = int(pkt_S[NetworkPacket.dst_addr_S_length: NetworkPacket.dst_addr_S_length + NetworkPacket.src_addr_S_length])
+        data_S = pkt_S[NetworkPacket.dst_addr_S_length + NetworkPacket.src_addr_S_length:]
+        headers = pkt_S[: NetworkPacket.dst_addr_S_length + NetworkPacket.src_addr_S_length]
+        headers_length = len(headers)
+        dataAvailable = mtu - headers_length
 
-        numOfPacketsNeeded = int(math.ceil((len(pkt_S) / float(mtu))))
-        # print("len(pkt_S): ", len(pkt_S))
-        # print("mtu:  ", mtu)
-        # print("#packetsneeded: ", numOfPacketsNeeded)
         packetsSegmented = []
+        while data_S is not "":
+            if dataAvailable < len(data_S):
+                new_data_S = data_S[:dataAvailable]
+                data_S = data_S[dataAvailable:]
+            else:
+                new_data_S = data_S[:dataAvailable]
+                data_S = data_S[dataAvailable:]
 
-        for x in range(0, numOfPacketsNeeded):
-            packet = str(dst_addr).zfill(NetworkPacket.dst_addr_S_length) + data_S[(mtu - NetworkPacket.dst_addr_S_length) * x: (mtu - NetworkPacket.dst_addr_S_length) * (x + 1)]
-            packetsSegmented.append(packet)
+            packet = NetworkPacket(dst_addr, src_addr, new_data_S)
+
+            packetsSegmented.append(packet.to_byte_S())
 
         return packetsSegmented
 
