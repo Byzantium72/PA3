@@ -9,7 +9,7 @@ from time import sleep
 
 # configuration parameters
 router_queue_size = 0  # 0 means unlimited
-simulation_time = 5  # give the network sufficient time to transfer all packets before quitting
+simulation_time = 15  # give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
     object_L = []  # keeps track of objects, so we can kill their threads
@@ -82,6 +82,8 @@ if __name__ == '__main__':
         # client.udt_send(2, 'Sample data %d' % i)
         host1.udt_send(3, 1, 'Packet sent from Host 1 to Host 3: %d' % i)
         host2.udt_send(4, 2, 'Packet sent from Host 2 to Host 4: %d' % i)
+        # host1.udt_send(3, 1, 'Packet sent from Host 1 to Host 3: A B C D E F G H I J K L M N O P Q R S T U V W X Y Z %d' % i)
+        # host2.udt_send(4, 2, 'Packet sent from Host 2 to Host 4: a b c d e f g h i j k l m n o p q r s t u v w x y z %d' % i)
 
     # give the network sufficient time to transfer all packets before quitting
     sleep(simulation_time)
